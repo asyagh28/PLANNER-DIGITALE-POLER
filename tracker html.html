@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pole Dance Life Tracker 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f8f7ff;color:#1a1a2e}
+::-webkit-scrollbar{display:none}
+input,select,textarea,button{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const MESIS = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+const GG = ["L","M","M","G","V","S","D"];
+const TODAY = new Date();
+const TSTR = TODAY.toISOString().split("T")[0];
+const P = "#7c3aed", PK = "#db2777";
+
+const FIGS = [
+  {id:"f1",n:"Fireman Spin",l:"Base",d:"Spin base con gambe avvolte al palo",m:"Braccia, Core"},
+  {id:"f2",n:"Chair Spin",l:"Base",d:"Posizione seduta in rotazione",m:"Braccia, Cosce"},
+  {id:"f3",n:"Back Hook Spin",l:"Base",d:"Gancio posteriore con rotazione",m:"Glutei, Core"},
+  {id:"f4",n:"Body Spiral",l:"Base",d:"Spirale del corpo lungo il palo",m:"Core, Fianchi"},
+  {id:"f5",n:"Pole Sit",l:"Base",d:"Seduta sul palo con gambe aperte",m:"Cosce, Core"},
+  {id:"f6",n:"Front Hook Spin",l:"Base",d:"Gancio anteriore in rotazione",m:"Quadricipiti, Braccia"},
+  {id:"f7",n:"Crucifix",l:"Base",d:"Posizione a croce sul palo",m:"Core, Braccia"},
+  {id:"f8",n:"Carousel",l:"Base",d:"Rotazione ampia con gambe estese",m:"Full body"},
+  {id:"f9",n:"Ayesha",l:"Intermedio",d:"Presa invertita laterale",m:"Spalle, Core"},
+  {id:"f10",n:"Deadlift Invert",l:"Intermedio",d:"Inversione controllata senza slancio",m:"Core, Braccia, Schiena"},
+  {id:"f11",n:"Jade Split",l:"Intermedio",d:"Spaccata laterale sul palo",m:"Flessori, Abduttori"},
+  {id:"f12",n:"Brass Monkey",l:"Intermedio",d:"Presa con gancio posteriore invertita",m:"Core, Glutei"},
+  {id:"f13",n:"Superman",l:"Intermedio",d:"Posizione orizzontale estesa",m:"Schiena, Core, Braccia"},
+  {id:"f14",n:"Butterfly",l:"Intermedio",d:"Spaccata frontale in aria",m:"Flessori, Core"},
+  {id:"f15",n:"Hip Hold",l:"Intermedio",d:"Equilibrio sui fianchi sul palo",m:"Fianchi, Core"},
+];
+const RISC_LIST = [
+  {id:"r1",n:"Rotazioni collo",z:"Collo",s:60,d:"Lente rotazioni complete, 5 per lato"},
+  {id:"r2",n:"Apertura spalle",z:"Spalle",s:90,d:"Cerchi in avanti e indietro"},
+  {id:"r3",n:"Rotazioni polsi",z:"Polsi",s:60,d:"Essenziale per la grip"},
+  {id:"r4",n:"Cat-cow spine",z:"Schiena",s:90,d:"Mobilita spinale a 4 zampe"},
+  {id:"r5",n:"Hip circles",z:"Fianchi",s:90,d:"Grandi cerchi con i fianchi"},
+  {id:"r6",n:"Squat dinamici",z:"Gambe",s:60,d:"Squat lenti con pausa in basso"},
+  {id:"r7",n:"Lunge con twist",z:"Full body",s:60,d:"Affondo e rotazione del busto"},
+  {id:"r8",n:"Pike stretch",z:"Schiena/Gambe",s:60,d:"Piegamento in avanti gambe tese"},
+];
+const PREWK_LIST = [
+  {id:"p1",n:"Dead hang",z:"Braccia/Spalle",s:30,d:"Appeso al palo, corpo rilassato"},
+  {id:"p2",n:"Scapular pull-ups",z:"Spalle",s:45,d:"Retrazione scapolare controllata"},
+  {id:"p3",n:"Hollow body hold",z:"Core",s:30,d:"Posizione cava a terra"},
+  {id:"p4",n:"Pike push-ups",z:"Spalle",s:60,d:"Flessioni con busto inclinato"},
+  {id:"p5",n:"Lat stretch",z:"Dorsali",s:60,d:"Stretch laterale con braccio alzato"},
+  {id:"p6",n:"Wrist push-ups",z:"Polsi",s:45,d:"Potenziamento polsi a terra"},
+];
+const GRIPS = [
+  {n:"Dry Hands",t:"Polvere/Liquido",p:"Ottima per mani sudate, economico",c:"Si esaurisce velocemente",r:5,u:"Principianti e avanzate"},
+  {n:"iTac2",t:"Cera/Balsamo",p:"Lunga durata, presa immediata",c:"Puo appicciarsi ai vestiti",r:5,u:"Avanzate, performance"},
+  {n:"Tite Grip",t:"Liquido",p:"Buona per clima umido",c:"Puo causare abrasioni",r:4,u:"Intermedie"},
+  {n:"Mighty Grip",t:"Polvere",p:"Naturale, ottima per principianti",c:"Efficacia media",r:3,u:"Principianti"},
+  {n:"Firm Grip",t:"Liquido",p:"Molto diffuso, facile da trovare",c:"Non specifico per pole",r:3,u:"Principianti"},
+];
+const PALI = [
+  {n:"Cromo",f:"Lucido",p:"Il piu diffuso, buon grip, economico",c:"Puo ossidare",t:"Neutro",l:"Tutti i livelli",col:"#94a3b8"},
+  {n:"Acciaio inox",f:"Opaco",p:"Ipoallergenico, durevole",c:"Piu costoso",t:"Freddo",l:"Tutti i livelli",col:"#cbd5e1"},
+  {n:"Ottone",f:"Dorato",p:"Grip naturale eccellente",c:"Richiede pulizia frequente",t:"Caldo",l:"Intermedie/Avanzate",col:"#f59e0b"},
+  {n:"Titanio Gold",f:"Dorato opaco",p:"Estetico, grip buono",c:"Costoso",t:"Neutro",l:"Avanzate",col:"#d97706"},
+  {n:"Silicone",f:"Gommato",p:"Massimo grip, no grip aid",c:"Difficile per spin",t:"Qualsiasi",l:"Principianti",col:"#8b5cf6"},
+];
+const GUIDES = [
+  {t:"Sicurezza prima di tutto",g:"Sicurezza",b:"Controlla sempre che il palo sia ben fissato. Non allenarti mai da sola con nuove inversioni. Usa il materassino. Togli tutti i gioielli."},
+  {t:"Cura delle mani",g:"Cura",b:"Le callosita sono normali e ti proteggono. Idrata le mani dopo l'allenamento, mai prima. In caso di strappi, usa cerotto elastico."},
+  {t:"Recupero muscolare",g:"Recovery",b:"Stretching statico 15-20 min dopo sessione intensa. Foam rolling su schiena e IT band. Aspetta 48h prima di riallenare gli stessi muscoli."},
+  {t:"Alimentazione",g:"Nutrizione",b:"Mangia un pasto leggero 2h prima. Post-allenamento: proteine entro 30 min. Idratati molto, la disidratazione riduce la grip."},
+  {t:"Progressione sicura",g:"Training",b:"Non saltare le basi. Ogni figura avanzata richiede padronanza di quelle precedenti. Un trick al massimo per sessione."},
+  {t:"Pole dance e ciclo",g:"Salute",b:"Nella fase luteale riduci l'intensita. La grip puo cambiare con le fluttuazioni ormonali. Ascolta il tuo corpo."},
+];
+const TABS = ["Planner","Tracker","Workout","Figure","Riscald.","Grip & Pali","Alimentare","Tenuta","Guide"];
+const TABS_ICONS = ["🗓","📊","💪","🩰","🔥","🤲","🍽","👗","📚"];
+const TIPI_GIORNO = ["allenamento","off","gara","lezione"];
+const TIPI_W = ["Pole","Condizionamento","Stretching","OFF","Riposo attivo"];
+const WEEK_ICONS = {Pole:"🩰",Condizionamento:"💪",Stretching:"🧘",OFF:"😴","Riposo attivo":"🌿"};
+const TIPO_COLORS = {
+  allenamento:{bg:"#ede9fe",c:"#5b21b6",border:"#7c3aed"},
+  off:{bg:"#fce7f3",c:"#9d174d",border:"#db2777"},
+  gara:{bg:"#fef3c7",c:"#92400e",border:"#f59e0b"},
+  lezione:{bg:"#d1fae5",c:"#065f46",border:"#059669"},
+};
+
+function pad(n){return n<10?"0"+n:""+n;}
+function dimMese(y,m){return new Date(y,m+1,0).getDate();}
+function firstDay(y,m){const d=new Date(y,m,1).getDay();return d===0?6:d-1;}
+function dstr(y,m,d){return y+"-"+pad(m+1)+"-"+pad(d);}
+
+const Card=({children,style={}})=><div style={{background:"#fff",border:".5px solid #e5e7eb",borderRadius:12,padding:"1rem",marginBottom:10,...style}}>{children}</div>;
+const Lbl=({children})=><span style={{fontSize:11,color:"#6b7280",marginBottom:3,display:"block"}}>{children}</span>;
+const StatCard=({v,l,c=P})=><div style={{background:"#f3f4f6",borderRadius:11,padding:"11px 14px",textAlign:"center",flex:1}}><div style={{fontSize:22,fontWeight:700,color:c}}>{v}</div><div style={{fontSize:11,color:"#6b7280",marginTop:1}}>{l}</div></div>;
+const PBar=({pct})=><div style={{borderRadius:7,overflow:"hidden",height:5,background:"#f3f4f6",marginBottom:3}}><div style={{height:"100%",background:`linear-gradient(90deg,${P},${PK})`,width:`${pct}%`}}/></div>;
+const Stars=({n})=><span>{Array.from({length:5},(_,i)=><span key={i} style={{color:i<n?"#f59e0b":"#d1d5db"}}>&#9733;</span>)}</span>;
+const Btn=({children,onClick,pink,out,active,style={}})=>{
+  if(out)return<button onClick={onClick} style={{background:active?"#ede9fe":"transparent",border:".5px solid",borderColor:active?P:"#e5e7eb",color:active?P:"#1a1a2e",padding:"5px 11px",borderRadius:7,cursor:"pointer",fontSize:12,...style}}>{children}</button>;
+  return<button onClick={onClick} style={{background:pink?PK:P,color:"#fff",border:"none",padding:"7px 15px",borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:500,...style}}>{children}</button>;
+};
+const Inp=({value,onChange,placeholder,type="text",style={}})=><input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"7px 9px",border:".5px solid #e5e7eb",borderRadius:7,fontSize:13,color:"#1a1a2e",background:"#fff",outline:"none",...style}}/>;
+const Txta=({value,onChange,placeholder,style={}})=><textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{width:"100%",padding:"7px 9px",border:".5px solid #e5e7eb",borderRadius:7,fontSize:13,color:"#1a1a2e",background:"#fff",outline:"none",resize:"vertical",...style}}/>;
+const Sel=({value,onChange,options})=><select value={value} onChange={e=>onChange(e.target.value)} style={{width:"100%",padding:"7px 9px",border:".5px solid #e5e7eb",borderRadius:7,fontSize:13,color:"#1a1a2e",background:"#fff",outline:"none"}}>{options.map(o=><option key={o}>{o}</option>)}</select>;
+
+function App(){
+  const [tab,setTab]=useState(0);
+  const [pm,setPm]=useState(TODAY.getMonth());
+  const [py,setPy]=useState(2026);
+  const [dayData,setDayData]=useState({});
+  const [selDay,setSelDay]=useState(null);
+  const [workouts,setWorkouts]=useState([]);
+  const [wp,setWp]=useState([
+    {g:"Lunedi",t:"Pole",i:"🩰"},{g:"Martedi",t:"OFF",i:"😴"},
+    {g:"Mercoledi",t:"Condizionamento",i:"💪"},{g:"Giovedi",t:"Pole",i:"🩰"},
+    {g:"Venerdi",t:"OFF",i:"😴"},{g:"Sabato",t:"Pole",i:"🩰"},
+    {g:"Domenica",t:"Stretching",i:"🧘"},
+  ]);
+  const [fst,setFst]=useState(()=>Object.fromEntries(FIGS.map(f=>[f.id,"da imparare"])));
+  const [fnote,setFnote]=useState({});
+  const [ffilter,setFfilter]=useState("Tutti");
+  const [rc,setRc]=useState(RISC_LIST.map(e=>({...e,done:false})));
+  const [pc,setPc]=useState(PREWK_LIST.map(e=>({...e,done:false})));
+  const [timer,setTimer]=useState({id:null,sec:0,run:false,name:""});
+  const timerRef=useRef(null);
+  const [pasti,setPasti]=useState({});
+  const [energia,setEnergia]=useState({});
+  const [tenute,setTenute]=useState([]);
+  const [appunti,setAppunti]=useState([]);
+  const [gtab,setGtab]=useState("grip");
+  const [nw,setNw]=useState({data:TSTR,dur:"",int:"Media",tipo:"Pole",note:""});
+  const [nt,setNt]=useState({n:"",c:"",tipo:"Pratica",note:""});
+  const [na,setNa]=useState({t:"",c:"",g:""});
+
+  const totSess=workouts.length;
+  const totMin=workouts.reduce((a,w)=>a+Number(w.dur||0),0);
+  const fc=Object.values(fst).filter(v=>v==="conquistata").length;
+  const streak=(()=>{
+    let s=0;
+    for(let i=0;i<60;i++){
+      const d=new Date(TODAY);d.setDate(TODAY.getDate()-i);
+      const k=d.toISOString().split("T")[0];
+      const found=workouts.some(w=>w.data===k)||(dayData[k]&&dayData[k].tipo==="allenamento");
+      if(found)s++;else if(i>0)break;
+    }
+    return s;
+  })();
+
+  useEffect(()=>{
+    if(timer.run&&timer.sec>0){
+      timerRef.current=setInterval(()=>setTimer(t=>{
+        if(t.sec<=1){clearInterval(timerRef.current);return{...t,sec:0,run:false};}
+        return{...t,sec:t.sec-1};
+      }),1000);
+    }else clearInterval(timerRef.current);
+    return()=>clearInterval(timerRef.current);
+  },[timer.run]);
+
+  function Planner(){
+    const days=dimMese(py,pm),first=firstDay(py,pm);
+    const cells=[];
+    for(let i=0;i<first;i++)cells.push(<div key={"e"+i}/>);
+    for(let d=1;d<=days;d++){
+      const k=dstr(py,pm,d);
+      const dd=dayData[k]||{};
+      const isT=k===TSTR;
+      const tc=dd.tipo?TIPO_COLORS[dd.tipo]:null;
+      const lbl=!dd.tipo?"":dd.tipo==="off"?"OFF":dd.tipo==="gara"?"GARA":dd.tipo==="lezione"?"LEZ":"ALN";
+      cells.push(<div key={k} onClick={()=>setSelDay(selDay===k?null:k)} style={{borderRadius:7,padding:"5px 2px",textAlign:"center",cursor:"pointer",minHeight:40,border:`.5px solid ${tc?tc.border:isT?P:"#e5e7eb"}`,background:tc?tc.bg:isT?"#ede9fe":"#f3f4f6"}}>
+        <div style={{fontSize:12,fontWeight:isT?700:400,color:tc?tc.c:isT?P:"#1a1a2e"}}>{d}</div>
+        {lbl&&<div style={{fontSize:8,color:tc?tc.c:"#6b7280"}}>{lbl}</div>}
+      </div>);
+    }
+    const sdd=selDay?dayData[selDay]||{}:{};
+    const gk="goal-"+py+"-"+pm;
+    return <>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <Btn out onClick={()=>{let m=pm-1,y=py;if(m<0){m=11;y--;}setPm(m);setPy(y);}}>← Prec</Btn>
+        <b style={{fontSize:15}}>{MESI[pm]} {py}</b>
+        <Btn out onClick={()=>{let m=pm+1,y=py;if(m>11){m=0;y++;}setPm(m);setPy(y);}}>Succ →</Btn>
+      </div>
+      <Card><Lbl>Obiettivo di {MESI[pm]}</Lbl><Inp value={dayData[gk]||""} onChange={v=>setDayData(d=>({...d,[gk]:v}))} placeholder="Es. Imparare Ayesha..."/></Card>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,marginBottom:7}}>
+        {GG.map((g,i)=><div key={i} style={{textAlign:"center",fontSize:10,color:"#6b7280",padding:"3px 0",fontWeight:500}}>{g}</div>)}
+        {cells}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
+        {TIPI_GIORNO.map(t=><span key={t} style={{background:TIPO_COLORS[t].bg,color:TIPO_COLORS[t].c,padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>{t}</span>)}
+      </div>
+      {selDay&&<Card style={{border:`1px solid ${P}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
+          <b style={{fontSize:13}}>{new Date(selDay+"T12:00:00").toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})}</b>
+          <button onClick={()=>setSelDay(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:17,color:PK}}>✕</button>
+        </div>
+        <Lbl>Tipo giorno</Lbl>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:9}}>
+          {TIPI_GIORNO.map(t=><Btn key={t} out active={sdd.tipo===t} onClick={()=>setDayData(d=>({...d,[selDay]:{...d[selDay],tipo:t}}))}>{t}</Btn>)}
+        </div>
+        <Lbl>Note</Lbl>
+        <Txta value={sdd.note||""} onChange={v=>setDayData(d=>({...d,[selDay]:{...d[selDay],note:v}}))} placeholder="Note..." style={{minHeight:52,marginBottom:9}}/>
+        <div style={{display:"flex",gap:7}}>
+          <Btn onClick={()=>setSelDay(null)}>Salva</Btn>
+          <Btn out onClick={()=>{setDayData(d=>{const n={...d};delete n[selDay];return n;});setSelDay(null);}}>Cancella</Btn>
+        </div>
+      </Card>}
+    </>;
+  }
+
+  function Tracker(){
+    const last12=Array.from({length:12},(_,i)=>{
+      const d=new Date(TODAY);d.setMonth(TODAY.getMonth()-11+i);
+      const y2=d.getFullYear(),m2=d.getMonth();
+      const cnt=workouts.filter(w=>{const wd=new Date(w.data);return wd.getFullYear()===y2&&wd.getMonth()===m2;}).length;
+      return{l:MESIS[m2],c:cnt};
+    });
+    const mx=Math.max(...last12.map(x=>x.c),1);
+    const achs=[
+      {n:"Prima sessione",i:"🌸",done:totSess>=1},{n:"5 sessioni",i:"⭐",done:totSess>=5},
+      {n:"10 sessioni",i:"🌟",done:totSess>=10},{n:"Prima figura",i:"🩰",done:fc>=1},
+      {n:"5 figure",i:"💫",done:fc>=5},{n:"Streak 7gg",i:"🔥",done:streak>=7},
+      {n:"10 ore",i:"⏱",done:totMin>=600},{n:"Pole queen",i:"👑",done:totSess>=30},
+    ];
+    const ip=Object.values(fst).filter(v=>v==="in progress").length;
+    const di=Object.values(fst).filter(v=>v==="da imparare").length;
+    return <>
+      <div style={{display:"flex",gap:7,marginBottom:14}}>
+        <StatCard v={totSess} l="Sessioni" c={P}/><StatCard v={(totMin/60).toFixed(1)} l="Ore" c={PK}/>
+        <StatCard v={streak} l="Streak" c="#f59e0b"/><StatCard v={fc} l="Figure" c="#059669"/>
+      </div>
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Sessioni 12 mesi</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:72}}>
+          {last12.map((x,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+            <div style={{width:"100%",background:`linear-gradient(to top,${P},${PK})`,borderRadius:"3px 3px 0 0",height:Math.max((x.c/mx)*58,x.c>0?3:0)}}/>
+            <div style={{fontSize:8,color:"#6b7280"}}>{x.l}</div>
+          </div>)}
+        </div>
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Badge</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7}}>
+          {achs.map(a=><div key={a.n} style={{textAlign:"center",padding:"9px 3px",borderRadius:9,background:a.done?"#ede9fe":"#f3f4f6",border:`.5px solid ${a.done?P:"#e5e7eb"}`}}>
+            <div style={{fontSize:19,filter:a.done?"none":"grayscale(1) opacity(.4)"}}>{a.i}</div>
+            <div style={{fontSize:9,color:a.done?P:"#6b7280",marginTop:3,fontWeight:a.done?600:400}}>{a.n}</div>
+          </div>)}
+        </div>
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Progressi figure</div>
+        <div style={{display:"flex",gap:7,marginBottom:9}}>
+          <StatCard v={fc} l="Conquistate" c="#059669"/><StatCard v={ip} l="In progress" c="#d97706"/><StatCard v={di} l="Da imparare" c={P}/>
+        </div>
+        <PBar pct={(fc/FIGS.length*100).toFixed(0)}/>
+        <div style={{fontSize:10,color:"#9ca3af",textAlign:"right",marginTop:2}}>{fc}/{FIGS.length}</div>
+      </Card>
+    </>;
+  }
+
+  function Workout(){
+    return <>
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Piano settimanale</div>
+        {wp.map((g,wi)=><div key={wi} style={{display:"flex",alignItems:"center",padding:"7px 0",borderBottom:".5px solid #e5e7eb",gap:6,flexWrap:"wrap"}}>
+          <span style={{fontSize:13,fontWeight:500,width:85,flexShrink:0}}>{g.g}</span>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,flex:1}}>
+            {TIPI_W.map(t=><button key={t} onClick={()=>setWp(w=>w.map((x,j)=>j===wi?{...x,t,i:WEEK_ICONS[t]||"💪"}:x))}
+              style={{background:g.t===t?"#ede9fe":"transparent",border:".5px solid",borderColor:g.t===t?P:"#e5e7eb",color:g.t===t?P:"#1a1a2e",padding:"3px 7px",borderRadius:7,cursor:"pointer",fontSize:10}}>{t}</button>)}
+          </div>
+          <span>{g.i}</span>
+        </div>)}
+      </Card>
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Registra sessione</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <div><Lbl>Data</Lbl><Inp type="date" value={nw.data} onChange={v=>setNw(w=>({...w,data:v}))}/></div>
+          <div><Lbl>Durata (min)</Lbl><Inp type="number" value={nw.dur} onChange={v=>setNw(w=>({...w,dur:v}))} placeholder="60"/></div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <div><Lbl>Tipo</Lbl><Sel value={nw.tipo} onChange={v=>setNw(w=>({...w,tipo:v}))} options={["Pole","Condizionamento","Stretching","Flessibilita","Performance"]}/></div>
+          <div><Lbl>Intensita</Lbl><Sel value={nw.int} onChange={v=>setNw(w=>({...w,int:v}))} options={["Leggera","Media","Intensa","Massima"]}/></div>
+        </div>
+        <Lbl>Note</Lbl>
+        <Txta value={nw.note} onChange={v=>setNw(w=>({...w,note:v}))} placeholder="Come e andata?" style={{minHeight:50,marginBottom:9}}/>
+        <Btn onClick={()=>{if(!nw.data||!nw.dur)return;setWorkouts(ws=>[{...nw,id:Date.now()+""},...ws]);setNw(w=>({...w,dur:"",note:""}));}}>Salva sessione</Btn>
+      </Card>
+      {workouts.length>0&&<Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Storico</div>
+        {workouts.map(w=><div key={w.id} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:".5px solid #e5e7eb"}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:500}}>{new Date(w.data+"T12:00:00").toLocaleDateString("it-IT",{weekday:"short",day:"numeric",month:"short"})}</div>
+            <div style={{fontSize:11,color:"#6b7280"}}>{w.dur}min · {w.tipo} · {w.int}</div>
+            {w.note&&<div style={{fontSize:10,color:"#9ca3af"}}>{w.note}</div>}
+          </div>
+          <button onClick={()=>setWorkouts(ws=>ws.filter(x=>x.id!==w.id))} style={{background:"none",border:"none",cursor:"pointer",color:"#e24b4a",fontSize:15}}>✕</button>
+        </div>)}
+      </Card>}
+    </>;
+  }
+
+  function Figure(){
+    const filt=ffilter==="Tutti"?FIGS:FIGS.filter(f=>f.l===ffilter);
+    return <>
+      <div style={{display:"flex",gap:5,marginBottom:13}}>
+        {["Tutti","Base","Intermedio"].map(f=><Btn key={f} out active={ffilter===f} onClick={()=>setFfilter(f)}>{f}</Btn>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        {filt.map(f=>{
+          const st=fst[f.id]||"da imparare";
+          const bc=st==="conquistata"?{background:"#d1fae5",color:"#065f46"}:st==="in progress"?{background:"#fef3c7",color:"#92400e"}:{background:"#ede9fe",color:"#5b21b6"};
+          return <Card key={f.id}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+              <b style={{fontSize:12}}>{f.n}</b>
+              <span style={{background:f.l==="Intermedio"?"#fef3c7":"#ede9fe",color:f.l==="Intermedio"?"#92400e":P,padding:"2px 7px",borderRadius:18,fontSize:9,fontWeight:500}}>{f.l}</span>
+            </div>
+            <div style={{fontSize:10,color:"#6b7280",marginBottom:3}}>{f.d}</div>
+            <div style={{fontSize:9,color:"#9ca3af",marginBottom:7}}>💪 {f.m}</div>
+            <select value={st} onChange={e=>setFst(s=>({...s,[f.id]:e.target.value}))} style={{width:"100%",padding:"5px 7px",border:".5px solid #e5e7eb",borderRadius:7,fontSize:11,marginBottom:5,background:"#fff"}}>
+              <option value="da imparare">Da imparare</option>
+              <option value="in progress">In progress</option>
+              <option value="conquistata">Conquistata</option>
+            </select>
+            <span style={{...bc,padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>
+              {st==="conquistata"?"✓ Conquistata":st==="in progress"?"↺ In progress":"○ Da imparare"}
+            </span>
+            <textarea value={fnote[f.id]||""} onChange={e=>setFnote(n=>({...n,[f.id]:e.target.value}))} placeholder="Note..." style={{width:"100%",minHeight:28,marginTop:7,fontSize:10,padding:"5px 7px",border:".5px solid #e5e7eb",borderRadius:7,resize:"vertical",background:"#fff"}}/>
+          </Card>;
+        })}
+      </div>
+    </>;
+  }
+
+  function EsBlock({list,setList,title}){
+    const done=list.filter(e=>e.done).length;
+    return <Card>
+      <div style={{fontWeight:600,fontSize:14,marginBottom:5}}>{title}</div>
+      <div style={{fontSize:11,color:"#6b7280",marginBottom:5}}>{done}/{list.length} completati</div>
+      <PBar pct={(done/list.length*100).toFixed(0)}/>
+      <div style={{marginBottom:10}}/>
+      {list.map((es,i)=>{
+        const active=timer.id===es.id&&timer.run;
+        return <div key={es.id} style={{borderBottom:".5px solid #e5e7eb",padding:"7px 0"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <div onClick={()=>setList(l=>l.map((x,j)=>j===i?{...x,done:!x.done}:x))}
+                style={{width:17,height:17,borderRadius:4,border:".5px solid",borderColor:es.done?P:"#e5e7eb",background:es.done?P:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",flexShrink:0}}>
+                {es.done?"✓":""}
+              </div>
+              <div>
+                <div style={{fontSize:12,fontWeight:500,textDecoration:es.done?"line-through":"none",color:es.done?"#9ca3af":"#1a1a2e"}}>{es.n}</div>
+                <div style={{fontSize:10,color:"#9ca3af"}}>{es.z} · {es.s}s</div>
+              </div>
+            </div>
+            <Btn pink={active} onClick={()=>{
+              clearInterval(timerRef.current);
+              if(timer.id===es.id&&timer.run){setTimer(t=>({...t,run:false}));return;}
+              setTimer({id:es.id,sec:es.s,run:true,name:es.n});
+            }}>{active?"⏸ "+timer.sec+"s":"▶"}</Btn>
+          </div>
+          <div style={{fontSize:10,color:"#9ca3af",marginTop:3,marginLeft:23}}>{es.d}</div>
+        </div>;
+      })}
+      <Btn out onClick={()=>setList(l=>l.map(e=>({...e,done:false})))} style={{marginTop:9,width:"100%",fontSize:11}}>Reset</Btn>
+    </Card>;
+  }
+
+  function Risc(){
+    return <>
+      {timer.id&&<div style={{background:"#ede9fe",border:`1px solid ${P}`,borderRadius:11,padding:"1rem",textAlign:"center",marginBottom:14}}>
+        <div style={{fontSize:11,color:P,fontWeight:500,marginBottom:3}}>{timer.name}</div>
+        <div style={{fontSize:36,fontWeight:700,color:P}}>{pad(Math.floor(timer.sec/60))}:{pad(timer.sec%60)}</div>
+        <div style={{display:"flex",gap:7,justifyContent:"center",marginTop:7}}>
+          <Btn pink={timer.run} onClick={()=>setTimer(t=>({...t,run:!t.run}))}>{timer.run?"Pausa":"Riprendi"}</Btn>
+          <Btn out onClick={()=>{clearInterval(timerRef.current);setTimer({id:null,sec:0,run:false,name:""});}}>Stop</Btn>
+        </div>
+      </div>}
+      <EsBlock list={rc} setList={setRc} title="🔥 Riscaldamento pre-pole"/>
+      <EsBlock list={pc} setList={setPc} title="💪 Condizionamento"/>
+    </>;
+  }
+
+  function Grip(){
+    return <>
+      <div style={{display:"flex",gap:5,marginBottom:13}}>
+        <Btn out active={gtab==="grip"} onClick={()=>setGtab("grip")}>🤲 Grip Aid</Btn>
+        <Btn out active={gtab==="pali"} onClick={()=>setGtab("pali")}>Tipi di Palo</Btn>
+      </div>
+      {gtab==="grip"?<>
+        <div style={{background:"#ede9fe",border:`.5px solid ${P}`,borderRadius:9,padding:11,marginBottom:10,fontSize:12,lineHeight:1.6}}>
+          <b style={{color:P}}>Regola d'oro:</b> <span style={{color:"#6b7280"}}>Mai creme idratanti prima di allenarti. Le calli sono tue amiche!</span>
+        </div>
+        {GRIPS.map(g=><Card key={g.n}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+            <b style={{fontSize:14}}>{g.n}</b>
+            <span style={{background:"#ede9fe",color:P,padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>{g.t}</span>
+          </div>
+          <Stars n={g.r}/>
+          <div style={{fontSize:11,marginTop:7}}><span style={{color:"#059669"}}>✓ </span><span style={{color:"#6b7280"}}>{g.p}</span></div>
+          <div style={{fontSize:11,marginTop:3}}><span style={{color:"#e24b4a"}}>✗ </span><span style={{color:"#6b7280"}}>{g.c}</span></div>
+          <div style={{fontSize:10,color:"#9ca3af",marginTop:5}}>{g.u}</div>
+        </Card>)}
+      </>:<>
+        <div style={{background:"#fce7f3",border:`.5px solid ${PK}`,borderRadius:9,padding:11,marginBottom:10,fontSize:12,lineHeight:1.6}}>
+          <b style={{color:PK}}>Diametri:</b> <span style={{color:"#6b7280"}}>40mm EU · 45mm USA · 50mm flessibilita</span>
+        </div>
+        {PALI.map(p=><Card key={p.n}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <span style={{width:13,height:13,borderRadius:"50%",background:p.col,display:"inline-block"}}/>
+              <b style={{fontSize:14}}>{p.n}</b>
+            </div>
+            <span style={{background:"#ede9fe",color:P,padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>{p.f}</span>
+          </div>
+          <div style={{fontSize:11,marginBottom:3}}><span style={{color:"#059669"}}>✓ </span><span style={{color:"#6b7280"}}>{p.p}</span></div>
+          <div style={{fontSize:11,marginBottom:5}}><span style={{color:"#e24b4a"}}>✗ </span><span style={{color:"#6b7280"}}>{p.c}</span></div>
+          <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+            <span style={{background:"#fef3c7",color:"#92400e",padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>{p.t}</span>
+            <span style={{background:"#d1fae5",color:"#065f46",padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>{p.l}</span>
+          </div>
+        </Card>)}
+      </>}
+    </>;
+  }
+
+  function Alim(){
+    const k=TSTR,en=energia[k]||0,acqua=pasti[k]?pasti[k].acqua||0:0;
+    return <>
+      <Card style={{background:"#ede9fe",borderColor:P}}>
+        <div style={{fontSize:12,fontWeight:600,color:P,marginBottom:7}}>Energia oggi</div>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+          {Array.from({length:5},(_,i)=><span key={i} onClick={()=>setEnergia(e=>({...e,[k]:i+1}))} style={{fontSize:20,cursor:"pointer",filter:i<en?"none":"grayscale(1) opacity(.3)"}}>⚡</span>)}
+          <span style={{fontSize:11,color:"#6b7280",marginLeft:7}}>{en}/5</span>
+        </div>
+      </Card>
+      {["Colazione","Pranzo","Cena","Snack pre-pole","Snack post-pole"].map(p=><Card key={p}>
+        <Lbl><b>{p}</b></Lbl>
+        <Txta value={pasti[k]?pasti[k][p]||"":""} onChange={v=>setPasti(ps=>({...ps,[k]:{...ps[k],[p]:v}}))} placeholder="Cosa hai mangiato?" style={{minHeight:48}}/>
+      </Card>)}
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>💧 Idratazione</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+          {Array.from({length:10},(_,i)=><button key={i} onClick={()=>setPasti(ps=>({...ps,[k]:{...ps[k],acqua:i+1}}))}
+            style={{width:30,height:38,borderRadius:7,border:".5px solid",borderColor:i<acqua?P:"#e5e7eb",background:i<acqua?"#ede9fe":"transparent",cursor:"pointer",fontSize:15}}>
+            💧
+          </button>)}
+        </div>
+        <div style={{fontSize:11,color:"#6b7280",marginTop:7}}>{acqua}/10 bicchieri</div>
+      </Card>
+    </>;
+  }
+
+  function Tenuta(){
+    const tipi=["Pratica","Performance","Gara","Casual"];
+    return <>
+      <Card>
+        <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Aggiungi tenuta</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <div><Lbl>Nome</Lbl><Inp value={nt.n} onChange={v=>setNt(t=>({...t,n:v}))} placeholder="Set glitter rosa"/></div>
+          <div><Lbl>Colore/Materiale</Lbl><Inp value={nt.c} onChange={v=>setNt(t=>({...t,c:v}))} placeholder="Fucsia, lycra"/></div>
+        </div>
+        <Lbl>Occasione</Lbl>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+          {tipi.map(t=><Btn key={t} out active={nt.tipo===t} onClick={()=>setNt(x=>({...x,tipo:t}))}>{t}</Btn>)}
+        </div>
+        <Lbl>Note</Lbl>
+        <Inp value={nt.note} onChange={v=>setNt(t=>({...t,note:v}))} placeholder="Brand, taglia..." style={{marginBottom:9}}/>
+        <Btn onClick={()=>{if(!nt.n.trim())return;setTenute(ts=>[...ts,{...nt,id:Date.now()+"",pref:false}]);setNt({n:"",c:"",tipo:"Pratica",note:""});}}>Aggiungi</Btn>
+      </Card>
+      {tenute.length===0&&<div style={{textAlign:"center",color:"#6b7280",padding:"1.5rem",fontSize:12}}>Nessuna tenuta ancora 👗</div>}
+      {tipi.filter(t=>tenute.some(x=>x.tipo===t)).map(tipo=><div key={tipo}>
+        <div style={{fontSize:11,color:"#6b7280",fontWeight:600,marginBottom:7,textTransform:"uppercase",letterSpacing:1}}>{tipo}</div>
+        {tenute.filter(t=>t.tipo===tipo).map(t=><Card key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{display:"flex",gap:5,alignItems:"center"}}><b style={{fontSize:13}}>{t.n}</b>{t.pref?" ⭐":""}</div>
+            {t.c&&<div style={{fontSize:11,color:"#6b7280"}}>{t.c}</div>}
+            {t.note&&<div style={{fontSize:10,color:"#9ca3af"}}>{t.note}</div>}
+          </div>
+          <div style={{display:"flex",gap:3}}>
+            <Btn out active={t.pref} onClick={()=>setTenute(ts=>ts.map(x=>x.id===t.id?{...x,pref:!x.pref}:x))} style={{fontSize:10,padding:"3px 7px"}}>⭐</Btn>
+            <button onClick={()=>setTenute(ts=>ts.filter(x=>x.id!==t.id))} style={{background:"none",border:"none",cursor:"pointer",color:"#e24b4a",fontSize:14}}>✕</button>
+          </div>
+        </Card>)}
+      </div>)}
+    </>;
+  }
+
+  function Guide(){
+    return <>
+      <div style={{fontWeight:600,fontSize:14,marginBottom:9}}>Guide e Consigli</div>
+      {GUIDES.map(g=><Card key={g.t}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+          <b style={{fontSize:13}}>{g.t}</b>
+          <span style={{background:"#ede9fe",color:P,padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500}}>{g.g}</span>
+        </div>
+        <div style={{fontSize:12,color:"#6b7280",lineHeight:1.6}}>{g.b}</div>
+      </Card>)}
+      <div style={{fontWeight:600,fontSize:14,marginBottom:9,marginTop:14}}>I miei appunti</div>
+      <Card>
+        <Lbl>Titolo</Lbl><Inp value={na.t} onChange={v=>setNa(a=>({...a,t:v}))} placeholder="Titolo" style={{marginBottom:7}}/>
+        <Lbl>Tag</Lbl><Inp value={na.g} onChange={v=>setNa(a=>({...a,g:v}))} placeholder="tecnica, grip..." style={{marginBottom:7}}/>
+        <Lbl>Contenuto</Lbl><Txta value={na.c} onChange={v=>setNa(a=>({...a,c:v}))} placeholder="Note, consigli..." style={{minHeight:72,marginBottom:9}}/>
+        <Btn onClick={()=>{if(!na.t.trim())return;setAppunti(as=>[...as,{...na,id:Date.now()+"",data:TSTR}]);setNa({t:"",c:"",g:""});}}>Salva appunto</Btn>
+      </Card>
+      {appunti.map(a=><Card key={a.id}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+          <b style={{fontSize:13}}>{a.t}</b>
+          <button onClick={()=>setAppunti(as=>as.filter(x=>x.id!==a.id))} style={{background:"none",border:"none",cursor:"pointer",color:"#e24b4a",fontSize:14}}>✕</button>
+        </div>
+        {a.g&&<div style={{marginBottom:5}}>{a.g.split(",").map(x=><span key={x} style={{background:"#ede9fe",color:P,padding:"2px 9px",borderRadius:18,fontSize:10,fontWeight:500,marginRight:3}}>{x.trim()}</span>)}</div>}
+        <div style={{fontSize:12,color:"#6b7280",whiteSpace:"pre-wrap"}}>{a.c}</div>
+        <div style={{fontSize:10,color:"#9ca3af",marginTop:5}}>{new Date(a.data+"T12:00:00").toLocaleDateString("it-IT")}</div>
+      </Card>)}
+    </>;
+  }
+
+  const VIEWS=[Planner,Tracker,Workout,Figure,Risc,Grip,Alim,Tenuta,Guide];
+  const View=VIEWS[tab];
+
+  return <div style={{fontFamily:"system-ui,sans-serif",background:"#f8f7ff",minHeight:"100vh",color:"#1a1a2e"}}>
+    <div style={{background:`linear-gradient(135deg,${P},${PK})`,padding:"1.2rem 1rem .8rem"}}>
+      <div style={{fontSize:20,fontWeight:700,color:"#fff"}}>🩰 Pole Dance Life Tracker</div>
+      <div style={{fontSize:12,color:"rgba(255,255,255,.8)",marginTop:2}}>{TODAY.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+      <div style={{display:"flex",gap:8,marginTop:10}}>
+        {[[totSess,"Sessioni"],[streak+" 🔥","Streak"],[fc+" ✓","Figure"]].map(([v,l])=><div key={l} style={{background:"rgba(255,255,255,.15)",borderRadius:9,padding:"6px 12px",textAlign:"center"}}>
+          <div style={{fontSize:17,fontWeight:700,color:"#fff"}}>{v}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,.75)"}}>{l}</div>
+        </div>)}
+      </div>
+    </div>
+    <div style={{display:"flex",overflowX:"auto",background:"#fff",borderBottom:"1px solid #e5e7eb",position:"sticky",top:0,zIndex:10}}>
+      {TABS.map((t,i)=><button key={i} onClick={()=>setTab(i)} style={{padding:"9px 10px",border:"none",borderBottom:`2px solid ${tab===i?P:"transparent"}`,cursor:"pointer",fontSize:10,background:"transparent",color:tab===i?P:"#6b7280",whiteSpace:"nowrap",fontWeight:tab===i?600:400,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+        <span style={{fontSize:15}}>{TABS_ICONS[i]}</span>{t}
+      </button>)}
+    </div>
+    <div style={{padding:"14px 1rem 3rem",maxWidth:720,margin:"0 auto"}}>
+      <View/>
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
